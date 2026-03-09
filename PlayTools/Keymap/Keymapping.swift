@@ -140,17 +140,19 @@ class Keymapping {
 
     @discardableResult
     public func resetKeymap(path: URL) -> KeymappingData {
-        setKeymap(path: path, map: KeymappingData(bundleIdentifier: bundleIdentifier))
-        return getKeymap(path: path)
+        let newMap = KeymappingData(bundleIdentifier: bundleIdentifier)
+        setKeymap(path: path, map: newMap)
+        return newMap
     }
 
     @discardableResult
     private func resetConfig() -> KeymapConfig {
         let defaultURL = constructKeymapPath(name: "default")
 
-        keymapConfig = KeymapConfig(defaultKm: defaultURL, keymapOrder: [defaultURL])
+        let newConfig = KeymapConfig(defaultKm: defaultURL, keymapOrder: [defaultURL])
+        keymapConfig = newConfig
 
-        return keymapConfig
+        return newConfig
     }
 
 }
