@@ -120,9 +120,17 @@ __attribute__((visibility("hidden")))
 // Info.plist injection methods
 - (NSDictionary *)pm_infoDictionary {
     NSDictionary *originalDict = [self pm_infoDictionary];
-    if (originalDict && ![originalDict objectForKey:@"NSAppleMusicUsageDescription"]) {
+    if (originalDict) {
         NSMutableDictionary *mutDict = [originalDict mutableCopy];
-        mutDict[@"NSAppleMusicUsageDescription"] = @"PlayCover requires this permission to prevent crashes.";
+        if (!mutDict[@"NSAppleMusicUsageDescription"]) {
+            mutDict[@"NSAppleMusicUsageDescription"] = @"PlayCover requires this permission to prevent crashes.";
+        }
+        if (!mutDict[@"NSMicrophoneUsageDescription"]) {
+            mutDict[@"NSMicrophoneUsageDescription"] = @"PlayCover requires this permission to use the microphone.";
+        }
+        if (!mutDict[@"com.apple.security.device.audio-input"]) {
+            mutDict[@"com.apple.security.device.audio-input"] = @NO;
+        }
         return [mutDict copy];
     }
     return originalDict;
@@ -130,8 +138,14 @@ __attribute__((visibility("hidden")))
 
 - (id)pm_objectForInfoDictionaryKey:(NSString *)key {
     id originalValue = [self pm_objectForInfoDictionaryKey:key];
-    if (!originalValue && [key isEqualToString:@"NSAppleMusicUsageDescription"]) {
-        return @"PlayCover requires this permission to prevent crashes.";
+    if (!originalValue) {
+        if ([key isEqualToString:@"NSAppleMusicUsageDescription"]) {
+            return @"PlayCover requires this permission to prevent crashes.";
+        } else if ([key isEqualToString:@"NSMicrophoneUsageDescription"]) {
+            return @"PlayCover requires this permission to use the microphone.";
+        } else if ([key isEqualToString:@"com.apple.security.device.audio-input"]) {
+            return @NO;
+        }
     }
     return originalValue;
 }
@@ -202,7 +216,7 @@ __attribute__((visibility("hidden")))
     }
     // if ([[PlaySettings shared] bypass]) [self loadEnvironmentBypass]; # disabled as it might be too powerful
 
-    // Inject NSAppleMusicUsageDescription
+    // Inject missing privacy permissions
     [objc_getClass("NSBundle") swizzleInstanceMethod:@selector(infoDictionary) withMethod:@selector(pm_infoDictionary)];
     [objc_getClass("NSBundle") swizzleInstanceMethod:@selector(objectForInfoDictionaryKey:) withMethod:@selector(pm_objectForInfoDictionaryKey:)];
 
