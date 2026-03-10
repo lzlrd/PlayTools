@@ -27,8 +27,31 @@ class Toucher {
                 return
             }
             tid = -1
-            keyWindow = screen.keyWindow
-            keyView = keyWindow!.hitTest(point, with: nil)
+
+            // If Keymapping is disabled, we do not want to inject fake
+            // touches. This prevents fake finger taps from conflicting
+            // with native mouse clicks.
+            if !PlaySettings.shared.keymapping {
+                var activeWindow = screen.keyWindow
+
+                // Fallback if older keyWindow APIs might return nil.
+                if activeWindow == nil {
+                    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                    activeWindow = scenes.flatMap { $0.windows }.first(where: { $0.isKeyWindow })
+                        ?? scenes.flatMap { $0.windows }.first
+                }
+
+                keyWindow = activeWindow
+
+                // Safely unwrap keyWindow to prevent a crash if input is
+                // received before the application's window is ready.
+                guard let window = keyWindow else {
+                    tid = nil
+                    return
+                }
+
+                keyView = window.hitTest(point, with: nil) ?? window
+            }
         } else if tid == nil {
             return
         }
