@@ -110,6 +110,19 @@ extension UIApplication {
             ModeAutomaton.onCmdK()
         }
     }
+
+    @objc
+    func applyWindowSizePatch(_ sender: AnyObject) {
+        let address = Unmanaged<AnyObject>.passUnretained(UIScreen.main as AnyObject).toOpaque()
+        // We pass Height as Width and Width as Height because internal screen bounds
+        // at 0x28 expect the raw hardware coordinates (portrait), even in landscape mode.
+        address.advanced(by: 0x28).storeBytes(
+            of: CGRect(x: 0.0, y: 0.0, width: PlaySettings.shared.windowSizeHeight, height: PlaySettings.shared.windowSizeWidth),
+            toByteOffset: 0,
+            as: CGRect.self
+        )
+        Toast.showHint(title: "Resized window")
+    }
 }
 
 extension UIViewController {
@@ -146,7 +159,9 @@ var keymapping = [
     NSLocalizedString("menu.keymapping.previousKeymap", tableName: "Playtools",
                       value: "Previous Keymap", comment: ""),
     NSLocalizedString("menu.keymapping.nextKeymap", tableName: "Playtools",
-                      value: "Next Keymap", comment: "")
+                      value: "Next Keymap", comment: ""),
+    NSLocalizedString("menu.keymapping.forceWindowSize", tableName: "Playtools",
+                      value: "Resize window", comment: "")
   ]
 var iconsSelctor = [
     UIImage(systemName: "pencil"),
@@ -157,7 +172,8 @@ var iconsSelctor = [
     UIImage(systemName: "wrench.and.screwdriver"),
     UIImage(systemName: "pointer.arrow.slash"),
     UIImage(systemName: "arrow.down.square"),
-    UIImage(systemName: "arrow.up.square")
+    UIImage(systemName: "arrow.up.square"),
+    UIImage(systemName: "macwindow")
   ]
 var keymappingSelectors = [#selector(UIApplication.switchEditorMode(_:)),
                            #selector(UIApplication.removeElement(_:)),
@@ -167,7 +183,8 @@ var keymappingSelectors = [#selector(UIApplication.switchEditorMode(_:)),
                            #selector(UIApplication.toggleDebugOverlay(_:)),
                            #selector(UIApplication.hideCursor(_:)),
                            #selector(UIApplication.previousKeymap(_:)),
-                           #selector(UIApplication.nextKeymap(_:))
+                           #selector(UIApplication.nextKeymap(_:)),
+                           #selector(UIApplication.applyWindowSizePatch(_:))
     ]
 
 class MenuController {
@@ -237,7 +254,8 @@ class MenuController {
             "D",                            // Toggle debug overlay
             ".",                            // Hide cursor until move
             "[",                            // Previous keymap
-            "]"                             // Next keymap
+            "]",                            // Next keymap
+            "\\"                            // Resize window
         ]
         let arrowKeyChildrenCommands = zip(zip(keyCommands, keymapping), iconsSelctor).map { (arg0, image) in
             let (command, btn) = arg0
