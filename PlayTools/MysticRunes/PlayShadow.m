@@ -117,6 +117,25 @@ __attribute__((visibility("hidden")))
     return @{};
 }
 
+// Info.plist injection methods
+- (NSDictionary *)pm_infoDictionary {
+    NSDictionary *originalDict = [self pm_infoDictionary];
+    if (originalDict && ![originalDict objectForKey:@"NSAppleMusicUsageDescription"]) {
+        NSMutableDictionary *mutDict = [originalDict mutableCopy];
+        mutDict[@"NSAppleMusicUsageDescription"] = @"PlayCover requires this permission to prevent crashes.";
+        return [mutDict copy];
+    }
+    return originalDict;
+}
+
+- (id)pm_objectForInfoDictionaryKey:(NSString *)key {
+    id originalValue = [self pm_objectForInfoDictionaryKey:key];
+    if (!originalValue && [key isEqualToString:@"NSAppleMusicUsageDescription"]) {
+        return @"PlayCover requires this permission to prevent crashes.";
+    }
+    return originalValue;
+}
+
 // Endfield UIAlertController hook
 - (void)pm_endfield_presentViewController:(UIViewController *)viewControllerToPresent
                                  animated:(BOOL)flag
@@ -182,6 +201,10 @@ __attribute__((visibility("hidden")))
         [self loadJailbreakBypass];
     }
     // if ([[PlaySettings shared] bypass]) [self loadEnvironmentBypass]; # disabled as it might be too powerful
+
+    // Inject NSAppleMusicUsageDescription
+    [objc_getClass("NSBundle") swizzleInstanceMethod:@selector(infoDictionary) withMethod:@selector(pm_infoDictionary)];
+    [objc_getClass("NSBundle") swizzleInstanceMethod:@selector(objectForInfoDictionaryKey:) withMethod:@selector(pm_objectForInfoDictionaryKey:)];
 
     // Swizzle ATTrackingManager
     [objc_getClass("ATTrackingManager") swizzleClassMethod:@selector(requestTrackingAuthorizationWithCompletionHandler:) withMethod:@selector(pm_return_2_with_completion_handler:)];
